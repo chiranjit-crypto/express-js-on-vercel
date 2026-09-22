@@ -1,0 +1,1058 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vempalli — CAT Landscape Map</title>
+
+<style>
+:root{
+  --forest:#334B4A;--teal:#2E7573;--sage:#95B1AF;--mint:#E1EDE8;
+  --gold:#C98A2E;--coral:#C0626B;--bg:#FBFCFB;--card:#FFFFFF;--sunken:#F1F4F2;
+  --tx:#243130;--tx-body:#475553;--tx-mute:#6E7A78;--bd:#E4E8E6;--bd-mid:#C7CECC;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#141B1A;--card:#1C2523;--sunken:#202926;--tx:#EDF2F0;--tx-body:#C6D0CC;
+  --tx-mute:#8FA09B;--bd:#2B3634;--bd-mid:#3A4744;--mint:#1D2E2B;
+}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx-body);font-family:var(--sans);font-size:14px;line-height:1.5}
+.wrap{max-width:1320px;margin:0 auto;padding:22px 26px 40px}
+h1{color:var(--tx);font-size:1.4rem;margin:0 0 4px;letter-spacing:-.01em}
+.sub{color:var(--tx-mute);font-size:.85rem;margin-bottom:16px;max-width:90ch}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+.tab{padding:7px 14px;border-radius:8px;border:1px solid var(--bd-mid);background:var(--card);
+  color:var(--tx-body);font-size:.85rem;cursor:pointer;font-family:var(--sans)}
+.tab.active{background:var(--forest);color:#fff;border-color:var(--forest)}
+.layout{display:grid;grid-template-columns:1fr 320px;gap:18px}
+@media (max-width:900px){.layout{grid-template-columns:1fr}}
+.panel{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:16px}
+.mapcard{padding:14px}
+.map-top{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+.ls-title{font-size:1.05rem;color:var(--tx);font-weight:600}
+.badge{font-size:.72rem;padding:3px 9px;border-radius:20px;font-weight:600;letter-spacing:.02em}
+.badge.geo{background:rgba(46,117,115,.14);color:var(--teal)}
+.badge.schematic{background:rgba(201,138,46,.16);color:var(--gold)}
+.notice{font-size:.78rem;color:var(--tx-mute);margin-bottom:10px}
+.controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.seg{display:inline-flex;flex-wrap:wrap;border:1px solid var(--bd-mid);border-radius:8px;overflow:hidden}
+.seg button{border:none;background:var(--card);color:var(--tx-body);font-size:.78rem;
+  padding:6px 12px;cursor:pointer;font-family:var(--sans)}
+.seg button.active{background:var(--forest);color:#fff}
+.seg button:disabled{opacity:.4;cursor:not-allowed}
+select{font-family:var(--sans);font-size:.8rem;padding:6px 9px;border-radius:8px;border:1px solid var(--bd-mid);
+  background:var(--card);color:var(--tx-body);max-width:240px}
+.contig-line{font-size:.82rem;padding:9px 12px;background:var(--sunken);border-radius:8px;margin-bottom:10px}
+.contig-line b{color:var(--tx)}
+.contig-line.yes{border-left:3px solid var(--teal)}
+.contig-line.no{border-left:3px solid var(--coral)}
+svg{width:100%;height:auto;background:var(--sunken);border-radius:8px;display:block}
+.shape{stroke:#fff;stroke-width:1;cursor:pointer;transition:opacity .1s}
+.shape:hover{opacity:.82}
+.shape.context,.shape.out{cursor:default;fill:var(--bd)!important}
+.shape.other{fill:#E08A2C!important;cursor:pointer}
+.shape.other:hover{opacity:.82}
+.shape.selected{stroke:var(--forest);stroke-width:2.4}
+.shape.selected.lt-forest{stroke:#2F6B3A}
+.shape.selected.lt-cultivable{stroke:#B8860B}
+.shape.selected.lt-water{stroke:#2A6F97}
+.shape.selected.lt-built{stroke:#8A4A4A}
+.shape.selected.lt-mixed{stroke:#7A6A53}
+.landtype-tag{display:inline-block;margin:6px 0 2px;font-size:.78rem;padding:5px 10px;border-radius:6px;font-weight:600}
+.landtype-tag.lt-forest{background:rgba(47,107,58,.14);color:#2F6B3A}
+.landtype-tag.lt-cultivable{background:rgba(184,134,11,.14);color:#8a6408}
+.landtype-tag.lt-water{background:rgba(42,111,151,.14);color:#2A6F97}
+.landtype-tag.lt-built{background:rgba(138,74,74,.14);color:#8A4A4A}
+.landtype-tag.lt-mixed{background:rgba(122,106,83,.14);color:#7A6A53}
+.landtype-note{font-size:.74rem;color:var(--tx-mute);margin:4px 0 12px}
+.ws-block{margin-top:10px;padding-top:8px;border-top:1px dashed var(--bd-mid)}
+.dev-chip{display:inline-block;margin:3px 6px 3px 0;padding:3px 8px;border-radius:12px;font-size:.72rem;font-weight:600}
+.dev-grid{margin-top:4px}
+#ws-key{margin-top:14px;padding-top:12px;border-top:1px solid var(--bd)}
+.ws-key-title{font-size:.9rem;font-weight:600;color:var(--tx);margin-bottom:4px}
+.ws-key-note{font-size:.76rem;color:var(--tx-mute);margin-bottom:10px;max-width:100ch}
+.ws-key-list{max-height:320px;overflow-y:auto;border:1px solid var(--bd);border-radius:8px}
+.ws-key-row{display:grid;grid-template-columns:16px 110px 150px 1fr;gap:8px;align-items:start;padding:6px 10px;font-size:.78rem;border-bottom:1px solid var(--bd)}
+.ws-key-row:last-child{border-bottom:none}
+.ws-key-row .sw{margin-top:3px;flex-shrink:0}
+.ws-key-code{color:var(--tx);font-weight:600}
+.ws-key-subcode{color:var(--tx-mute);font-weight:400;font-size:.72rem}
+.ws-key-meta{color:var(--tx-mute)}
+.ws-key-villages{color:var(--tx-mute)}
+@media (max-width:700px){.ws-key-row{grid-template-columns:16px 1fr}}
+.other-panel{margin-top:18px}
+.other-box{stroke:#fff;stroke-width:1;cursor:pointer;transition:opacity .1s}
+.other-box:hover{opacity:.78}
+.shape.gp-dim{opacity:.13}
+.shape.gp-hi{stroke:var(--gold);stroke-width:2.6}
+.gp-summary{font-size:.82rem;padding:10px 12px;background:var(--sunken);border-radius:8px;margin-bottom:10px;border-left:3px solid var(--gold)}
+.gp-summary h4{margin:0 0 6px;color:var(--tx);font-size:.9rem}
+.gp-summary .gpstat{display:inline-block;margin:2px 12px 2px 0}
+.gp-summary .gpstat b{color:var(--tx)}
+.gp-summary .vlist{margin-top:6px;font-size:.76rem;color:var(--tx-mute)}
+.cluster-combined{margin-top:14px;padding-top:12px;border-top:1px dashed var(--bd-mid)}
+.cluster-combined h4{margin:0 0 6px;font-size:.85rem;color:var(--tx)}
+.cluster-combined .vlist{font-size:.76rem;color:var(--tx-mute);margin-top:4px}
+.lbl{font-size:8.5px;fill:var(--tx);text-anchor:middle;pointer-events:none;font-family:var(--sans)}
+.lbl-sm{font-size:6.5px}
+.out-lbl{fill:var(--tx-mute);opacity:.75}
+.legend{display:flex;gap:16px;margin-top:10px;font-size:.74rem;color:var(--tx-mute);flex-wrap:wrap}
+.legend .sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.totals{display:flex;gap:20px;flex-wrap:wrap;margin-top:12px;font-size:.8rem;color:var(--tx-mute)}
+.tot .k{font-size:.72rem}
+.tot .v{color:var(--tx);font-weight:600;font-size:.95rem}
+.detail h3{margin:0 0 3px;color:var(--tx);font-size:1.05rem}
+.gpline{font-size:.78rem;color:var(--tx-mute);margin-bottom:10px}
+.stat{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--bd);font-size:.85rem}
+.stat:last-child{border-bottom:none}
+.stat .k{color:var(--tx-mute)}
+.stat .v{color:var(--tx);font-weight:600}
+.stat .v.hl{color:var(--teal)}
+.cluster-tag{display:inline-block;margin-top:10px;font-size:.76rem;padding:5px 10px;border-radius:6px}
+.cluster-tag.main{background:rgba(46,117,115,.14);color:var(--teal)}
+.cluster-tag.iso{background:rgba(192,98,107,.14);color:var(--coral)}
+.empty{color:var(--tx-mute);font-size:.85rem;padding:20px 0}
+.footer{margin-top:20px;font-size:.74rem;color:var(--tx-mute);max-width:110ch}
+</style>
+</head>
+<body>
+
+
+<div class="wrap">
+  <h1>CAT Landscape Maps &amp; Contiguity</h1>
+  <div class="sub">Village-level land-use detail and contiguity, in one file. Click any village for its full detail; use the colour toggle to switch between cropping-intensity view and contiguity view. Landscapes without confirmed GIS boundaries are shown as schematic (sized-by-area) layouts.</div>
+  <div class="tabs" id="tabs"></div>
+  <div class="layout">
+    <div class="panel mapcard">
+      <div class="map-top">
+        <div class="ls-title" id="ls-title"></div>
+        <div class="badge" id="ls-badge"></div>
+      </div>
+      <div class="notice" id="ls-notice"></div>
+      <div class="controls">
+        <div class="seg" id="colorseg">
+          <button id="btn-crop" class="active">Colour: cropping intensity</button>
+          <button id="btn-contig">Colour: contiguity</button>
+          <button id="btn-watershed">Colour: watershed</button>
+          <button id="btn-terrain">Colour: terrain</button>
+          <button id="btn-soil">Colour: soil</button>
+          <button id="btn-drought">Colour: drought risk</button>
+          <button id="btn-development">Colour: irrigation dev.</button>
+        </div>
+        <select id="gpfilter"><option value="">All Gram Panchayats</option></select>
+        <select id="jump"></select>
+      </div>
+      <div class="contig-line" id="contig-line" style="display:none"></div>
+      <div class="gp-summary" id="gp-summary" style="display:none"></div>
+      <svg id="svg" viewBox="0 0 1000 760"></svg>
+      <div class="legend" id="legend"></div>
+      <div class="totals" id="totals"></div>
+      <div id="ws-key" style="display:none"></div>
+    </div>
+    <div class="panel">
+      <div id="detail" class="detail"><div class="empty">Click a village to see its details here.</div></div>
+    </div>
+  </div>
+  <div class="panel other-panel" id="other-panel" style="display:none;margin-top:18px">
+    <div class="map-top">
+      <div class="ls-title">Other villages in this block (estimated)</div>
+    </div>
+    <div class="notice" id="other-notice"></div>
+    <svg id="other-svg" viewBox="0 0 1000 220"></svg>
+    <div class="legend" id="other-legend" style="margin-top:8px"></div>
+    <div id="other-detail" class="detail" style="margin-top:10px"><div class="empty">Click a box above to see its estimate.</div></div>
+  </div>
+  <div class="footer">Source: CoRE Stack (IIT Delhi ICTD / Gram Vaani) land-use classification and village boundary geometry, plus each landscape's own village list. Gross cropped area is derived as net sown area &times; cropping intensity (CoRE Stack's own satellite classification), not a directly measured figure &mdash; treat it, like cropping intensity, as satellite-relative rather than audited. Contiguity is computed by testing whether each landscape's own villages share a border with each other inside their full administrative block; villages outside the landscape are shown for context only and are not tested. Patharpratima and East Khasi Hills have no confirmed village-level GIS boundaries in CoRE Stack, so contiguity cannot be assessed for them and their layout is schematic (sized by area, not true shape or position). Clicking a village now also shows a predominant land-cover tag (forest, cultivable, water, built-up, or mixed), computed from CoRE Stack's own cultivable/forest/water/built-up shares for that boundary &mdash; nothing is shown on the map itself until you click a boundary. This is a land-cover reading from satellite imagery, not terrain. CoRE Stack does carry terrain and elevation data (slope/plain/ridge/valley shares and min/max/mean elevation), but only at the micro-watershed (block-wide) level &mdash; it isn't matched into the per-village figures shown here, except for the &ldquo;other villages&rdquo; estimates, which draw on it directly. In Patratu, Rajnagar, Dantewada and Dharashiv, the further villages in each block that CoRE Stack hasn't classified are now shown directly on the map itself, coloured by their estimated dominant land cover and clickable for the same estimate detail &mdash; these are marked as estimates throughout, not CoRE Stack's own village-level figures. In Mau and Vempalli, other villages are shown with their real boundary and area only, since the watershed-level dataset needed for a land-cover estimate wasn't available for those two blocks.</div>
+</div>
+
+<script id="mapdata" type="application/json">{"order": ["Vempalli"], "landscapes": {"Vempalli": {"name": "Vempalli", "mode": "geo", "unit_label": "village", "units": [{"village": "Vempalle", "state": "Andhra Pradesh", "gp": "Vempalli", "area": 3195.4, "tree": 994.9, "tree_pct": 31.14, "net": 1428.8, "net_pct": 44.71, "ci": 1.94, "gross": 2771.9, "sk": 421.9, "db": 629.6, "water": 0.3, "built": 400.3, "land_type": "cultivable", "land_type_shares": {"cultivable": 44.7, "forest": 31.1, "water": 0.0, "built": 12.5}}, {"village": "T.Velamvaripalle", "state": "Andhra Pradesh", "gp": "T Velamavaripalli", "area": 3103.5, "tree": 1671.4, "tree_pct": 53.86, "net": 1087.3, "net_pct": 35.03, "ci": 2.05, "gross": 2229.0, "sk": 326.1, "db": 344.5, "water": 1.3, "built": 43, "land_type": "forest", "land_type_shares": {"cultivable": 35.0, "forest": 53.9, "water": 0.0, "built": 1.4}}, {"village": "Tallapalle", "state": "Andhra Pradesh", "gp": "Tallapalle", "area": 1655.6, "tree": 538.2, "tree_pct": 32.51, "net": 856.8, "net_pct": 51.75, "ci": 2.01, "gross": 1722.2, "sk": 272.6, "db": 280.4, "water": 1.5, "built": 38.4, "land_type": "cultivable", "land_type_shares": {"cultivable": 51.8, "forest": 32.5, "water": 0.1, "built": 2.3}}, {"village": "Alireddipalle", "state": "Andhra Pradesh", "gp": "Alireddipalli", "area": 1651.2, "tree": 608.2, "tree_pct": 36.83, "net": 696.9, "net_pct": 42.21, "ci": 1.98, "gross": 1379.9, "sk": 121.9, "db": 454, "water": 4.2, "built": 95.7, "land_type": "mixed", "land_type_shares": {"cultivable": 42.2, "forest": 36.8, "water": 0.3, "built": 5.8}}, {"village": "Idupulapaya", "state": "Andhra Pradesh", "gp": "Idupulpaya", "area": 1004.2, "tree": 628.3, "tree_pct": 62.57, "net": 319.5, "net_pct": 31.82, "ci": 2.16, "gross": 690.1, "sk": 29.3, "db": 208.2, "water": 0, "built": 20.7, "land_type": "forest", "land_type_shares": {"cultivable": 31.8, "forest": 62.6, "water": 0.0, "built": 2.1}}], "has_contiguity": true, "geo": {"viewBox": "0 0 1000 760", "shapes": [{"name": "Muthukuru", "d": "M 278.83,31.07 L 278.56,31.56 L 278.36,33.36 L 278.23,34.88 L 278.97,36.71 L 281.38,39.10 L 282.85,40.52 L 284.23,41.49 L 287.98,42.35 L 290.06,42.77 L 292.30,43.73 L 294.88,43.77 L 296.59,44.32 L 297.56,45.46 L 297.90,46.36 L 298.94,48.40 L 300.21,55.74 L 301.22,58.57 L 301.99,59.89 L 303.46,61.34 L 305.41,62.90 L 308.46,63.35 L 311.74,64.01 L 314.29,65.18 L 317.00,67.78 L 319.55,69.92 L 323.30,71.30 L 327.32,73.00 L 331.38,73.69 L 335.93,73.86 L 337.31,74.49 L 339.89,75.25 L 342.10,79.33 L 343.37,83.83 L 343.31,86.35 L 344.24,88.71 L 344.65,88.98 L 342.50,91.20 L 330.34,97.84 L 326.82,102.65 L 321.06,113.92 L 319.08,120.74 L 315.93,125.31 L 308.66,145.20 L 303.70,164.47 L 300.38,176.16 L 297.20,178.58 L 295.59,177.06 L 292.54,176.26 L 286.77,176.02 L 269.95,178.61 L 266.70,178.86 L 267.00,173.36 L 266.27,160.59 L 264.99,154.71 L 259.90,142.67 L 256.45,137.93 L 250.42,132.78 L 239.39,127.93 L 235.30,124.51 L 234.90,124.20 L 232.99,120.12 L 232.12,115.24 L 232.19,110.78 L 233.69,105.55 L 237.82,99.74 L 243.38,90.30 L 253.10,73.07 L 259.20,65.46 L 266.50,48.99 L 268.01,43.53 L 269.72,38.51 L 271.56,35.09 L 273.81,32.49 L 276.19,31.73 L 278.83,31.07 Z", "lx": 290.5, "ly": 87.7, "is_other": true, "area_ha": 897.5}, {"name": "Ramireddipalle", "d": "M 355.17,88.05 L 355.57,87.56 L 356.44,85.87 L 357.38,83.65 L 358.32,80.23 L 360.76,73.80 L 367.00,60.93 L 368.77,56.50 L 370.08,51.34 L 369.41,49.82 L 367.33,48.99 L 364.22,47.12 L 363.24,45.57 L 363.81,42.94 L 366.50,37.44 L 371.45,32.84 L 373.90,31.07 L 375.21,30.59 L 377.39,30.00 L 384.69,31.56 L 389.22,33.29 L 390.52,33.77 L 396.02,36.50 L 401.41,42.80 L 403.76,45.57 L 406.27,47.92 L 408.85,49.20 L 411.33,49.44 L 412.91,49.48 L 414.01,48.78 L 414.52,47.68 L 415.32,47.09 L 416.83,46.40 L 418.64,46.12 L 420.82,45.95 L 422.49,46.99 L 423.26,48.02 L 424.13,49.48 L 424.27,51.48 L 424.50,54.32 L 424.37,56.84 L 421.95,61.79 L 419.61,65.77 L 417.06,72.72 L 413.74,88.36 L 413.61,93.65 L 413.81,99.22 L 414.92,103.10 L 416.22,106.24 L 418.00,107.59 L 419.84,108.32 L 421.45,108.15 L 423.53,108.08 L 425.81,108.15 L 428.19,108.67 L 429.36,109.29 L 432.21,111.36 L 434.72,114.65 L 435.56,116.69 L 435.49,119.56 L 435.49,120.25 L 434.55,121.53 L 420.48,125.27 L 412.20,127.14 L 410.39,127.83 L 408.52,128.70 L 408.08,130.22 L 408.95,131.32 L 411.33,132.19 L 414.18,132.85 L 414.88,132.92 L 411.97,133.30 L 405.50,132.67 L 394.88,125.62 L 390.39,123.54 L 382.41,118.66 L 374.64,110.67 L 369.04,107.84 L 362.14,104.45 L 358.79,101.89 L 355.47,89.99 L 355.17,88.05 Z", "lx": 399.6, "ly": 80.9, "is_other": true, "area_ha": 502.2}, {"name": "Naguru", "d": "M 344.65,88.98 L 345.82,89.85 L 348.00,90.16 L 349.37,90.19 L 352.35,89.74 L 354.40,88.98 L 355.17,88.05 L 355.47,89.99 L 358.79,101.89 L 362.14,104.45 L 369.04,107.84 L 374.64,110.67 L 382.41,118.66 L 390.39,123.54 L 394.88,125.62 L 405.50,132.67 L 411.97,133.30 L 414.88,132.92 L 416.93,133.09 L 418.60,134.23 L 419.64,136.17 L 419.51,139.42 L 419.04,141.94 L 418.30,144.37 L 413.44,157.13 L 411.16,170.48 L 405.64,178.48 L 399.37,184.84 L 397.89,187.85 L 397.79,188.96 L 396.32,189.23 L 388.24,193.45 L 381.14,205.22 L 372.73,214.80 L 363.65,222.37 L 356.58,226.15 L 351.85,230.30 L 343.07,240.78 L 339.22,244.03 L 339.18,244.06 L 334.86,246.62 L 331.51,247.77 L 330.54,246.73 L 328.49,244.83 L 328.56,243.34 L 330.34,240.61 L 330.27,237.35 L 326.92,233.44 L 326.48,230.68 L 326.32,228.19 L 324.77,225.38 L 323.77,220.64 L 323.80,218.78 L 325.71,216.53 L 328.43,214.83 L 329.43,213.48 L 329.13,210.61 L 326.89,207.81 L 324.10,205.04 L 323.80,201.65 L 325.04,195.05 L 323.87,193.28 L 322.26,189.61 L 320.85,186.74 L 317.80,185.95 L 310.33,185.67 L 304.13,183.84 L 299.74,182.25 L 297.63,178.96 L 297.20,178.58 L 300.38,176.16 L 303.70,164.47 L 308.66,145.20 L 315.93,125.31 L 319.08,120.74 L 321.06,113.92 L 326.82,102.65 L 330.34,97.84 L 342.50,91.20 L 344.65,88.98 Z", "lx": 351.6, "ly": 170.4, "is_other": true, "area_ha": 1082.6}, {"name": "Alavalapadu", "d": "M 266.70,178.86 L 269.95,178.61 L 286.77,176.02 L 292.54,176.26 L 295.59,177.06 L 297.20,178.58 L 297.63,178.96 L 299.74,182.25 L 304.13,183.84 L 310.33,185.67 L 317.80,185.95 L 320.85,186.74 L 322.26,189.61 L 323.87,193.28 L 325.04,195.05 L 323.80,201.65 L 324.10,205.04 L 326.89,207.81 L 329.13,210.61 L 329.43,213.48 L 328.43,214.83 L 325.71,216.53 L 323.80,218.78 L 323.77,220.64 L 324.77,225.38 L 326.32,228.19 L 326.48,230.68 L 326.92,233.44 L 330.27,237.35 L 330.34,240.61 L 328.56,243.34 L 328.49,244.83 L 330.54,246.73 L 331.51,247.77 L 331.41,247.80 L 331.41,252.92 L 331.41,264.16 L 324.94,274.16 L 319.45,278.31 L 310.10,286.55 L 299.71,293.08 L 291.00,297.82 L 281.88,302.91 L 280.51,301.84 L 277.56,300.76 L 270.25,298.00 L 262.61,293.60 L 252.02,287.55 L 248.10,285.06 L 244.75,284.19 L 242.41,282.91 L 229.97,278.45 L 222.70,274.51 L 222.64,274.40 L 220.76,272.43 L 219.25,269.35 L 218.38,264.47 L 217.41,253.92 L 217.74,248.08 L 218.82,243.23 L 220.86,240.81 L 223.54,237.04 L 243.68,223.20 L 246.93,219.61 L 248.47,216.84 L 248.57,216.60 L 252.90,209.19 L 257.96,196.71 L 259.90,189.86 L 262.95,185.05 L 265.63,182.25 L 266.67,179.03 L 266.70,178.86 Z", "lx": 286.3, "ly": 231.8, "is_other": true, "area_ha": 1023.3}, {"name": "Pamulur", "d": "M 339.22,244.03 L 343.07,240.78 L 351.85,230.30 L 356.58,226.15 L 363.65,222.37 L 372.73,214.80 L 381.14,205.22 L 388.24,193.45 L 396.32,189.23 L 397.79,188.96 L 397.63,190.27 L 400.01,192.55 L 404.09,195.25 L 424.37,212.03 L 433.75,219.09 L 443.67,227.56 L 448.39,231.27 L 450.67,235.76 L 453.55,240.09 L 457.78,246.42 L 488.44,289.11 L 494.20,297.51 L 499.60,304.47 L 499.70,304.53 L 499.56,311.73 L 499.53,319.34 L 498.59,328.33 L 496.18,332.17 L 490.55,337.57 L 488.44,338.89 L 483.41,339.20 L 476.41,340.30 L 463.07,345.94 L 458.25,348.12 L 453.49,353.76 L 444.98,362.37 L 437.17,371.71 L 434.22,374.52 L 431.27,372.51 L 423.40,368.74 L 416.46,367.74 L 406.57,366.08 L 399.60,365.59 L 391.46,363.31 L 386.84,361.23 L 378.56,358.74 L 372.93,358.74 L 370.01,358.33 L 369.04,357.32 L 369.11,354.45 L 369.18,352.83 L 368.34,351.17 L 366.90,350.54 L 364.95,348.74 L 363.38,336.46 L 363.38,330.48 L 364.79,322.77 L 364.02,306.89 L 363.98,303.77 L 361.67,296.47 L 359.09,291.80 L 356.11,288.76 L 353.19,286.96 L 349.44,286.17 L 349.30,284.26 L 350.21,277.31 L 348.73,267.03 L 345.75,256.86 L 342.33,251.29 L 339.22,244.03 Z", "lx": 406.7, "ly": 296.2, "is_other": true, "area_ha": 1867.9}, {"name": "Kathaluru", "d": "M 331.51,247.77 L 334.86,246.62 L 339.18,244.06 L 339.22,244.03 L 342.33,251.29 L 345.75,256.86 L 348.73,267.03 L 350.21,277.31 L 349.30,284.26 L 349.44,286.17 L 353.19,286.96 L 356.11,288.76 L 359.09,291.80 L 361.67,296.47 L 363.98,303.77 L 364.02,306.89 L 364.79,322.77 L 363.38,330.48 L 363.38,336.46 L 364.95,348.74 L 366.90,350.54 L 368.34,351.17 L 369.18,352.83 L 369.11,354.45 L 369.04,357.32 L 370.01,358.33 L 372.93,358.74 L 378.56,358.74 L 386.84,361.23 L 391.46,363.31 L 399.60,365.59 L 406.57,366.08 L 416.46,367.74 L 423.40,368.74 L 431.27,372.51 L 434.22,374.52 L 433.92,374.79 L 430.97,392.71 L 431.07,399.98 L 431.71,413.85 L 429.66,425.20 L 427.18,427.00 L 421.25,428.17 L 413.68,434.02 L 411.67,436.99 L 411.43,437.55 L 408.89,434.74 L 403.19,431.67 L 395.31,428.41 L 387.00,427.00 L 375.34,423.19 L 367.67,421.29 L 361.97,419.21 L 350.78,416.13 L 343.21,414.75 L 338.21,414.06 L 335.93,412.40 L 334.33,407.10 L 331.07,403.68 L 324.21,399.94 L 308.62,394.79 L 305.47,392.99 L 296.63,389.36 L 291.50,388.15 L 283.79,378.25 L 284.23,377.84 L 286.10,374.03 L 286.98,368.36 L 285.27,347.29 L 284.09,318.89 L 284.43,312.42 L 284.50,308.79 L 283.22,305.33 L 282.65,303.50 L 281.88,302.91 L 291.00,297.82 L 299.71,293.08 L 310.10,286.55 L 319.45,278.31 L 324.94,274.16 L 331.41,264.16 L 331.41,252.92 L 331.41,247.80 L 331.51,247.77 Z", "lx": 354.7, "ly": 348.0, "is_other": true, "area_ha": 1460.3}, {"name": "Tallapalle", "d": "M 252.90,404.61 L 262.61,395.52 L 276.08,385.62 L 280.98,380.81 L 283.79,378.25 L 291.50,388.15 L 296.63,389.36 L 305.47,392.99 L 308.62,394.79 L 324.21,399.94 L 331.07,403.68 L 334.33,407.10 L 335.93,412.40 L 338.21,414.06 L 343.21,414.75 L 350.78,416.13 L 361.97,419.21 L 367.67,421.29 L 375.34,423.19 L 387.00,427.00 L 395.31,428.41 L 403.19,431.67 L 408.89,434.74 L 411.43,437.55 L 409.32,442.70 L 406.24,450.14 L 406.14,453.01 L 404.13,455.71 L 398.43,459.76 L 393.67,463.46 L 389.08,467.05 L 378.12,475.50 L 367.33,482.55 L 358.92,487.67 L 354.83,489.09 L 349.20,489.23 L 346.49,490.06 L 344.48,492.17 L 331.41,502.55 L 324.94,507.56 L 322.56,508.01 L 319.28,507.70 L 308.76,501.65 L 304.74,501.09 L 301.42,501.41 L 287.78,503.65 L 280.41,504.80 L 274.71,508.29 L 271.53,509.26 L 261.71,509.85 L 248.54,513.72 L 242.04,513.86 L 232.05,511.20 L 222.74,505.80 L 215.26,498.53 L 216.54,496.60 L 218.01,492.55 L 218.21,483.24 L 219.32,477.61 L 221.23,463.46 L 225.15,447.51 L 231.85,431.84 L 239.26,419.42 L 248.61,408.63 L 252.90,404.61 Z", "lx": 313.5, "ly": 454.4, "is_other": false, "area_ha": null}, {"name": "T.Velamvaripalle", "d": "M 156.62,505.56 L 159.60,503.72 L 170.16,502.27 L 190.20,502.62 L 201.52,502.62 L 208.46,501.51 L 212.88,500.37 L 215.10,498.81 L 215.26,498.53 L 222.74,505.80 L 232.05,511.20 L 242.04,513.86 L 248.54,513.72 L 261.71,509.85 L 271.53,509.26 L 274.71,508.29 L 280.41,504.80 L 287.78,503.65 L 301.42,501.41 L 304.74,501.09 L 308.76,501.65 L 319.28,507.70 L 322.56,508.01 L 324.94,507.56 L 331.41,502.55 L 344.48,492.17 L 346.49,490.06 L 349.20,489.23 L 354.83,489.09 L 358.92,487.67 L 367.33,482.55 L 378.12,475.50 L 389.08,467.05 L 393.67,463.46 L 394.78,464.11 L 404.76,472.28 L 406.51,477.05 L 407.68,484.94 L 410.56,498.74 L 415.59,510.19 L 419.54,520.26 L 420.11,527.01 L 421.59,532.02 L 425.47,534.82 L 426.65,536.24 L 426.01,538.35 L 423.76,544.41 L 423.63,547.90 L 422.96,548.04 L 411.77,549.70 L 410.93,549.32 L 409.59,542.57 L 408.65,541.29 L 395.65,542.95 L 391.43,545.37 L 389.58,546.20 L 384.16,542.99 L 382.78,542.85 L 380.44,544.41 L 377.45,546.86 L 373.90,546.83 L 371.32,546.90 L 363.14,551.36 L 361.90,552.47 L 362.84,554.61 L 363.65,557.24 L 362.88,559.25 L 361.37,560.46 L 340.19,560.35 L 331.71,562.33 L 329.97,563.16 L 330.10,568.90 L 331.14,571.42 L 336.54,576.02 L 346.99,584.67 L 354.30,587.20 L 363.24,587.72 L 395.25,589.14 L 395.28,593.25 L 379.26,593.25 L 377.89,594.98 L 375.95,604.67 L 374.77,608.02 L 372.93,609.75 L 370.08,610.20 L 350.11,610.34 L 348.27,611.55 L 339.52,619.89 L 337.31,619.99 L 333.79,618.06 L 328.70,617.33 L 322.66,618.61 L 317.34,621.03 L 312.21,621.17 L 296.79,620.03 L 294.31,620.23 L 287.04,623.62 L 282.25,623.80 L 278.80,624.97 L 271.90,628.23 L 266.47,629.75 L 260.84,629.64 L 249.95,629.71 L 244.75,631.51 L 236.34,630.37 L 227.09,628.33 L 216.91,622.52 L 210.64,619.79 L 208.73,621.65 L 205.41,628.43 L 203.94,629.16 L 194.25,628.74 L 179.24,626.74 L 158.20,627.64 L 156.52,628.47 L 156.52,628.43 L 155.65,625.39 L 154.88,622.52 L 152.00,616.60 L 149.15,611.90 L 146.60,609.03 L 145.06,606.57 L 143.55,602.70 L 142.08,597.61 L 141.07,588.86 L 139.46,582.35 L 136.35,560.21 L 136.72,542.81 L 137.29,534.51 L 137.65,526.83 L 138.16,521.78 L 139.43,518.56 L 141.51,516.07 L 142.08,515.35 L 149.75,509.81 L 156.62,505.56 Z", "lx": 295.1, "ly": 556.9, "is_other": false, "area_ha": null}, {"name": "Vempalle", "d": "M 499.70,304.53 L 506.87,309.07 L 514.48,314.88 L 515.55,316.71 L 529.22,339.82 L 535.35,349.85 L 541.89,360.09 L 546.78,363.83 L 549.13,365.70 L 553.65,366.60 L 559.01,366.66 L 564.67,366.11 L 554.35,381.12 L 548.72,392.78 L 544.84,414.68 L 545.51,428.45 L 549.60,443.25 L 556.50,453.36 L 566.08,461.28 L 577.91,469.48 L 592.69,477.23 L 604.38,490.65 L 604.99,491.41 L 604.92,495.42 L 605.86,508.53 L 605.69,520.78 L 604.48,526.76 L 603.85,533.75 L 605.69,543.64 L 608.04,553.54 L 609.21,556.76 L 611.52,563.36 L 607.23,563.47 L 603.31,563.26 L 599.32,560.94 L 590.58,547.69 L 587.66,544.51 L 585.62,543.47 L 577.58,542.47 L 573.19,541.26 L 557.64,530.01 L 555.93,530.22 L 543.40,537.87 L 538.34,539.77 L 536.76,539.77 L 529.86,530.64 L 527.44,528.49 L 525.00,528.18 L 512.26,528.22 L 508.71,527.18 L 505.23,524.96 L 495.88,522.68 L 492.56,521.89 L 490.48,522.96 L 487.74,525.03 L 487.17,527.90 L 486.29,528.01 L 477.62,522.89 L 472.86,521.54 L 470.28,521.89 L 472.02,533.02 L 473.79,534.79 L 486.09,538.25 L 492.63,542.50 L 496.85,545.69 L 498.69,549.21 L 501.21,558.24 L 501.17,559.14 L 499.70,560.11 L 494.37,563.40 L 490.99,566.44 L 482.34,576.16 L 478.12,578.20 L 474.67,580.14 L 463.47,588.44 L 458.55,590.24 L 457.81,589.97 L 458.35,577.13 L 457.17,574.47 L 452.38,569.28 L 447.32,565.68 L 445.75,564.16 L 445.55,562.15 L 446.42,561.18 L 446.42,555.30 L 445.01,553.16 L 441.19,547.59 L 438.41,546.69 L 434.25,546.10 L 423.63,547.90 L 423.76,544.41 L 426.01,538.35 L 426.65,536.24 L 425.47,534.82 L 421.59,532.02 L 420.11,527.01 L 419.54,520.26 L 415.59,510.19 L 410.56,498.74 L 407.68,484.94 L 406.51,477.05 L 404.76,472.28 L 394.78,464.11 L 393.67,463.46 L 398.43,459.76 L 404.13,455.71 L 406.14,453.01 L 406.24,450.14 L 409.32,442.70 L 411.43,437.55 L 411.67,436.99 L 413.68,434.02 L 421.25,428.17 L 427.18,427.00 L 429.66,425.20 L 431.71,413.85 L 431.07,399.98 L 430.97,392.71 L 433.92,374.79 L 434.22,374.52 L 437.17,371.71 L 444.98,362.37 L 453.49,353.76 L 458.25,348.12 L 463.07,345.94 L 476.41,340.30 L 483.41,339.20 L 488.44,338.89 L 490.55,337.57 L 496.18,332.17 L 498.59,328.33 L 499.53,319.34 L 499.56,311.73 L 499.70,304.53 Z", "lx": 494.3, "ly": 479.6, "is_other": false, "area_ha": null}, {"name": "Alireddipalle", "d": "M 564.67,366.11 L 569.53,365.66 L 601.94,356.08 L 603.95,355.49 L 616.72,351.69 L 638.03,347.40 L 644.23,346.08 L 647.78,346.95 L 649.72,348.99 L 652.14,356.15 L 654.28,367.74 L 656.33,384.17 L 657.70,392.89 L 663.13,399.87 L 679.85,416.79 L 693.69,428.76 L 703.31,441.28 L 715.60,460.76 L 717.82,467.68 L 717.58,470.89 L 717.72,473.56 L 716.31,474.91 L 715.87,475.32 L 711.68,476.46 L 680.62,478.99 L 671.44,479.06 L 668.39,479.61 L 666.95,480.06 L 665.98,480.65 L 665.64,481.55 L 665.54,482.28 L 665.74,482.59 L 664.30,482.59 L 659.98,484.25 L 651.60,486.84 L 646.44,486.77 L 642.32,486.70 L 637.89,487.74 L 630.96,485.11 L 622.88,484.73 L 620.94,483.69 L 618.53,481.79 L 616.58,481.90 L 611.39,484.04 L 606.29,488.43 L 605.02,490.92 L 604.99,491.41 L 604.38,490.65 L 592.69,477.23 L 577.91,469.48 L 566.08,461.28 L 556.50,453.36 L 549.60,443.25 L 545.51,428.45 L 544.84,414.68 L 548.72,392.78 L 554.35,381.12 L 564.67,366.11 Z", "lx": 636.3, "ly": 441.1, "is_other": false, "area_ha": null}, {"name": "Idupulapaya", "d": "M 604.99,491.41 L 605.02,490.92 L 606.29,488.43 L 611.39,484.04 L 616.58,481.90 L 618.53,481.79 L 620.94,483.69 L 622.88,484.73 L 630.96,485.11 L 637.89,487.74 L 642.32,486.70 L 646.44,486.77 L 651.60,486.84 L 659.98,484.25 L 664.30,482.59 L 665.74,482.59 L 665.98,483.04 L 666.48,484.52 L 669.19,486.98 L 673.31,490.51 L 680.08,493.45 L 686.32,495.49 L 693.89,498.09 L 699.72,499.68 L 703.11,499.88 L 709.44,500.02 L 725.16,500.68 L 733.30,501.16 L 737.35,501.37 L 738.09,501.79 L 738.86,502.41 L 739.40,503.14 L 739.73,503.86 L 739.73,504.66 L 739.63,505.28 L 739.16,505.73 L 738.22,506.25 L 735.95,507.18 L 729.38,508.12 L 721.37,508.81 L 711.52,507.87 L 707.63,508.39 L 705.35,509.99 L 702.10,512.41 L 693.35,518.05 L 692.28,519.08 L 690.87,523.75 L 689.33,528.91 L 688.43,531.33 L 687.79,533.09 L 687.19,534.68 L 687.19,535.96 L 687.32,537.18 L 688.36,539.42 L 690.77,541.60 L 691.58,542.16 L 693.45,542.50 L 698.85,542.71 L 705.12,543.06 L 707.26,543.30 L 712.89,544.30 L 719.32,545.44 L 733.23,546.52 L 742.38,547.35 L 750.56,547.17 L 755.05,546.52 L 761.35,542.61 L 764.83,540.39 L 765.40,539.08 L 765.84,536.97 L 765.67,535.79 L 765.64,535.79 L 761.98,533.16 L 757.96,530.74 L 756.02,528.63 L 754.28,523.82 L 753.20,520.19 L 753.10,515.73 L 753.91,512.44 L 755.18,510.09 L 757.93,507.77 L 759.00,506.73 L 760.54,506.18 L 762.32,506.18 L 763.42,506.25 L 764.73,506.66 L 766.04,507.49 L 768.38,508.19 L 771.27,508.53 L 776.29,508.74 L 784.64,507.22 L 794.69,506.32 L 805.41,505.14 L 820.42,506.77 L 831.78,509.50 L 835.84,510.16 L 845.32,507.91 L 852.09,507.01 L 854.81,506.46 L 856.18,506.60 L 857.76,506.80 L 858.93,507.74 L 860.07,508.88 L 861.54,511.23 L 862.92,515.90 L 863.65,519.57 L 863.59,521.09 L 863.35,522.72 L 862.95,524.10 L 861.11,526.00 L 858.89,527.28 L 856.48,528.56 L 853.10,529.43 L 848.31,531.05 L 843.08,533.09 L 840.16,534.55 L 838.08,535.34 L 832.56,534.03 L 826.19,530.36 L 822.80,529.39 L 821.63,528.98 L 819.45,528.94 L 817.74,529.60 L 808.93,533.61 L 804.78,536.69 L 801.46,539.36 L 794.52,542.78 L 776.29,550.18 L 767.55,552.64 L 761.04,554.47 L 749.12,555.37 L 732.83,554.06 L 707.86,552.22 L 670.47,547.93 L 656.16,548.07 L 643.62,548.70 L 626.20,555.68 L 620.44,555.75 L 616.85,557.14 L 614.04,558.10 L 613.20,560.32 L 614.07,563.33 L 611.52,563.36 L 609.21,556.76 L 608.04,553.54 L 605.69,543.64 L 603.85,533.75 L 604.48,526.76 L 605.69,520.78 L 605.86,508.53 L 604.92,495.42 L 604.99,491.41 Z", "lx": 730.7, "ly": 519.8, "is_other": false, "area_ha": null}]}, "contiguity": {"components": [["Alireddipalle", "Idupulapaya", "T.Velamvaripalle", "Tallapalle", "Vempalle"]], "n_selected": 5, "n_block": 12}, "gp_groups": {"Vempalli": {"villages": ["Vempalle"], "totals": {"n": 1, "area": 3195.4, "net": 1428.8, "gross": 2771.9, "tree": 994.9, "water": 0.3, "built": 400.3, "ci": 1.94}, "single_component": true, "components": [["VEMPALLE"]]}, "T Velamavaripalli": {"villages": ["T.Velamvaripalle"], "totals": {"n": 1, "area": 3103.5, "net": 1087.3, "gross": 2229.0, "tree": 1671.4, "water": 1.3, "built": 43, "ci": 2.05}, "single_component": true, "components": [["T.VELAMVARIPALLE"]]}, "Tallapalle": {"villages": ["Tallapalle"], "totals": {"n": 1, "area": 1655.6, "net": 856.8, "gross": 1722.2, "tree": 538.2, "water": 1.5, "built": 38.4, "ci": 2.01}, "single_component": true, "components": [["TALLAPALLE"]]}, "Alireddipalli": {"villages": ["Alireddipalle"], "totals": {"n": 1, "area": 1651.2, "net": 696.9, "gross": 1379.9, "tree": 608.2, "water": 4.2, "built": 95.7, "ci": 1.98}, "single_component": true, "components": [["ALIREDDIPALLE"]]}, "Idupulpaya": {"villages": ["Idupulapaya"], "totals": {"n": 1, "area": 1004.2, "net": 319.5, "gross": 690.1, "tree": 628.3, "water": 0, "built": 20.7, "ci": 2.16}, "single_component": true, "components": [["IDUPULAPAYA"]]}}}}}</script>
+<script>
+const DATA = JSON.parse(document.getElementById('mapdata').textContent);
+const svgNS = "http://www.w3.org/2000/svg";
+let current = DATA.order[0];
+let colorMode = "crop"; // "crop" | "contig" | "watershed" | "terrain" | "soil" | "drought" | "development"
+
+const TERRAIN_COLOR = {
+  'Mostly Plains': '#E7EFD6',
+  'Broad Plains and Slopes': '#B7CE8A',
+  'Broad Sloppy and Hilly': '#C99A4E',
+  'Mostly Hills and Valleys': '#8B5A2B',
+};
+const TERRAIN_ORDER = ['Mostly Plains','Broad Plains and Slopes','Broad Sloppy and Hilly','Mostly Hills and Valleys'];
+
+function categoricalColor(i){
+  const hue = (i * 137.508) % 360;
+  const sat = 52 + (i % 3) * 14;
+  const light = 40 + (i % 4) * 8;
+  return `hsl(${hue.toFixed(1)}, ${sat}%, ${light}%)`;
+}
+
+function watershedColorFor(entry, uid){
+  if(!entry._wsColorMap){
+    const order = entry.mws_uid_order || [];
+    const map = {};
+    order.forEach((id, i) => { map[id] = categoricalColor(i); });
+    entry._wsColorMap = map;
+  }
+  return entry._wsColorMap[uid] || '#C7CECC';
+}
+
+const SOIL_COLOR = {
+  'Well drained': '#CDEAC0',
+  'Moderately well drained': '#F5E1A4',
+  'Imperfectly drained': '#F0B27A',
+  'Somewhat poorly drained': '#E8B4B8',
+  'Poorly drained': '#D98880',
+  'Excessively drained': '#9BBF8E',
+};
+const SOIL_ORDER = ['Well drained','Moderately well drained','Imperfectly drained','Somewhat poorly drained','Poorly drained','Excessively drained'];
+const DEV_COLOR = {LOW:'#C0626B', MEDIUM:'#D9A441', HIGH:'#2E7573'};
+const DEV_ORDER = ['LOW','MEDIUM','HIGH'];
+
+function droughtColorFor(entry, score){
+  if(!entry._droughtRange){
+    const scores = (entry.geo.shapes||[]).filter(s=>s.drought).map(s=>s.drought.latest_score);
+    entry._droughtRange = scores.length ? {min: Math.min(...scores), max: Math.max(...scores)} : {min:0,max:1};
+  }
+  const {min,max} = entry._droughtRange;
+  const p = max>min ? (score-min)/(max-min) : 0.5;
+  const c1=[247,236,196], c2=[176,42,42];
+  const r=Math.round(c1[0]+(c2[0]-c1[0])*p), g=Math.round(c1[1]+(c2[1]-c1[1])*p), b=Math.round(c1[2]+(c2[2]-c1[2])*p);
+  return `rgb(${r},${g},${b})`;
+}
+
+function developmentGridHtml(dev){
+  if(!dev) return '';
+  const items = Object.entries(dev).map(([label,val]) =>
+    `<span class="dev-chip" style="background:${(DEV_COLOR[val]||'#C7CECC')}22;color:${DEV_COLOR[val]||'#555'};border:1px solid ${DEV_COLOR[val]||'#C7CECC'}">${label}: ${val}</span>`
+  ).join('');
+  return `<div class="ws-block"><div class="stat"><span class="k">Development indicators (Mission Antyodaya, latest published round)</span></div><div class="dev-grid">${items}</div></div>`;
+}
+
+function enrichmentHtml(u){
+  if(!u) return '';
+  let html = '';
+  if(u.demographics){
+    const d = u.demographics;
+    html += `<div class="ws-block">
+      <div class="stat"><span class="k">Population (2011 Census)</span><span class="v">${fmt(d.population,0)}</span></div>
+      <div class="stat"><span class="k">SC / ST population</span><span class="v">${fmt(d.sc_population,0)} / ${fmt(d.st_population,0)} (${fmt(d.sc_pct,1)}% / ${fmt(d.st_pct,1)}%)</span></div>
+      <div class="stat"><span class="k">Literacy rate</span><span class="v">${fmt(d.literacy_rate,1)}%</span></div>
+      <div class="landtype-note">From the 2011 Census, the most recent village-level count published &mdash; not a current figure.</div>
+    </div>`;
+  }
+  if(u.livestock){
+    const l = u.livestock;
+    html += `<div class="ws-block">
+      <div class="stat"><span class="k">Livestock (total, undated survey)</span><span class="v">${fmt(l.total,0)}</span></div>
+      <div class="stat"><span class="k">Cattle / buffalo</span><span class="v">${fmt(l.cattle,0)} / ${fmt(l.buffalo,0)}</span></div>
+      <div class="stat"><span class="k">Goat / sheep / pig</span><span class="v">${fmt(l.goat,0)} / ${fmt(l.sheep,0)} / ${fmt(l.pig,0)}</span></div>
+    </div>`;
+  }
+  html += developmentGridHtml(u.development);
+  if(u.facilities){
+    const f = u.facilities;
+    const rows = Object.entries(f).map(([label,km]) => `<div class="stat"><span class="k">${label}</span><span class="v">${fmt(km,1)} km</span></div>`).join('');
+    html += `<div class="ws-block"><div class="stat"><span class="k">Access to services &amp; markets</span></div>${rows}</div>`;
+  }
+  if(u.nrega){
+    const n = u.nrega;
+    const cats = Object.entries(n.by_category||{}).map(([k,v])=>`${k.replace(/_/g,' ')}: ${v}`).join(', ');
+    html += `<div class="ws-block">
+      <div class="stat"><span class="k">NREGA works, ${n.first_year}&ndash;${n.last_year} (cumulative)</span><span class="v hl">${fmt(n.total_works_recorded,0)}</span></div>
+      <div class="stat"><span class="k">NREGA works, ${n.last5yr_start}&ndash;${n.last_year}</span><span class="v">${fmt(n.total_works_last5yr,0)}</span></div>
+      ${cats ? `<div class="landtype-note">By category: ${cats}. The sheet's columns go back to 2005, but works are only actually recorded from 2016 onward, so earlier years are left out rather than counted as zero activity.</div>` : ''}
+    </div>`;
+  }
+  if(u.soil){
+    const s = u.soil;
+    html += `<div class="ws-block">
+      <div class="stat"><span class="k">Soil drainage</span><span class="v">${s.drainage||'&mdash;'}</span></div>
+      <div class="stat"><span class="k">Topsoil texture</span><span class="v">${s.topsoil_texture||'&mdash;'}</span></div>
+      <div class="stat"><span class="k">Topsoil organic carbon / pH</span><span class="v">${fmt(s.topsoil_organic_carbon,2)} / ${fmt(s.topsoil_ph,1)}</span></div>
+      <div class="stat"><span class="k">Available water capacity</span><span class="v">${fmt(s.available_water_capacity_mm_per_m,0)} mm/m</span></div>
+      <div class="landtype-note">From CoRE Stack's soil survey layer &mdash; a single one-time survey, not a year-by-year series.</div>
+    </div>`;
+  }
+  if(u.drought){
+    const dr = u.drought;
+    html += `<div class="ws-block">
+      <div class="stat"><span class="k">Drought pressure score, ${dr.latest_year}</span><span class="v hl">${fmt(dr.latest_score,1)}</span></div>
+      <div class="stat"><span class="k">Trend, ${dr.years[0]}&ndash;${dr.years[dr.years.length-1]}</span><span class="v">${dr.trend}</span></div>
+    </div>`;
+  }
+  if(u.water_bodies){
+    const w = u.water_bodies;
+    html += `<div class="ws-block">
+      <div class="stat"><span class="k">Water body area, ${w.area_first_year}</span><span class="v">${fmt(w.area_first_ha,1)} ha</span></div>
+      <div class="stat"><span class="k">Water body area, ${w.area_latest_year}</span><span class="v hl">${fmt(w.area_latest_ha,1)} ha</span></div>
+      <div class="stat"><span class="k">Change since ${w.area_first_year}</span><span class="v">${w.pct_change>0?'+':''}${fmt(w.pct_change,1)}%</span></div>
+    </div>`;
+  }
+  if(u.rivers || u.stream_order){
+    html += `<div class="ws-block">
+      ${u.rivers ? `<div class="stat"><span class="k">Named river(s) in this watershed</span><span class="v">${u.rivers.join(', ')}</span></div>` : ''}
+      ${u.stream_order ? `<div class="stat"><span class="k">Highest stream order present</span><span class="v">${u.stream_order.max_order} (of Strahler orders 1&ndash;11)</span></div>` : ''}
+    </div>`;
+  }
+  return html;
+}
+
+function watershedTerrainHtml(s){
+  if(!s || !s.mws_uid) return '';
+  return `<div class="ws-block">
+    <div class="stat"><span class="k">Micro-watershed</span><span class="v">${s.watershed_code || s.mws_uid}</span></div>
+    <div class="stat"><span class="k">Watershed area</span><span class="v">${fmt(s.mws_area_ha,1)} ha</span></div>
+    <div class="stat"><span class="k">Villages sharing this watershed</span><span class="v">${s.n_villages_sharing_mws || 1}</span></div>
+    <div class="stat"><span class="k">Terrain</span><span class="v">${s.ws_terrain || '&mdash;'}</span></div>
+    <div class="stat"><span class="k">Elevation (min&ndash;max, mean)</span><span class="v">${fmt(s.ws_elev_min,0)}&ndash;${fmt(s.ws_elev_max,0)} m, mean ${fmt(s.ws_elev_mean,0)} m</span></div>
+  </div>`;
+}
+let selectedEl = null;
+let gpFilter = "";
+
+function fmt(n, d){ if(n===null||n===undefined) return "—"; return Number(n).toLocaleString('en-IN',{maximumFractionDigits: d===undefined?1:d}); }
+
+function colorForPct(pct){
+  const p = Math.max(0, Math.min(100, pct)) / 100;
+  const c1 = [244,230,200], c2 = [46,117,115];
+  const r = Math.round(c1[0] + (c2[0]-c1[0])*p);
+  const g = Math.round(c1[1] + (c2[1]-c1[1])*p);
+  const b = Math.round(c1[2] + (c2[2]-c1[2])*p);
+  return `rgb(${r},${g},${b})`;
+}
+
+function clearSvg(){ const svg = document.getElementById('svg'); while(svg.firstChild) svg.removeChild(svg.firstChild); }
+
+function norm(s){ return (s||'').trim().toUpperCase(); }
+
+function clusterInfo(entry, name){
+  if(!entry.has_contiguity) return null;
+  const comps = entry.contiguity.components;
+  const n = norm(name);
+  for(let i=0;i<comps.length;i++){
+    if(comps[i].some(x=>norm(x)===n)) return {index:i, size:comps[i].length, isMain:i===0};
+  }
+  return null;
+}
+
+function sumUnits(list){
+  const t = list.reduce((a,u)=>{
+    a.area+=u.area||0; a.net+=u.net||0; a.gross+=u.gross||0;
+    a.tree+=u.tree||0; a.water+=u.water||0; a.built+=u.built||0;
+    return a;
+  }, {area:0,net:0,gross:0,tree:0,water:0,built:0});
+  t.ci = t.net ? Math.round((t.gross/t.net)*100)/100 : null;
+  t.n = list.length;
+  return t;
+}
+
+function clusterCombinedHtml(entry, u){
+  if(!entry.has_contiguity) return '';
+  const ci = clusterInfo(entry, u.village);
+  if(!ci) return '';
+  const comp = entry.contiguity.components[ci.index];
+  const set = new Set(comp.map(norm));
+  const members = entry.units.filter(x => set.has(norm(x.village)));
+  const t = sumUnits(members);
+  const label = ci.isMain ? 'Main contiguous block' : (ci.size===1 ? 'Isolated village' : 'Separate cluster');
+  return `<div class="cluster-combined">
+    <h4>Combined figures &mdash; ${label} (${t.n} ${entry.unit_label}${t.n===1?'':'s'})</h4>
+    <div class="stat"><span class="k">Total area</span><span class="v">${fmt(t.area)} ha</span></div>
+    <div class="stat"><span class="k">Net sown area</span><span class="v">${fmt(t.net)} ha</span></div>
+    <div class="stat"><span class="k">Gross cropped area (derived)</span><span class="v">${fmt(t.gross)} ha</span></div>
+    <div class="stat"><span class="k">Cropping intensity (combined)</span><span class="v">${fmt(t.ci,2)}</span></div>
+    <div class="stat"><span class="k">Tree cover</span><span class="v">${fmt(t.tree)} ha</span></div>
+    <div class="stat"><span class="k">Water bodies</span><span class="v">${fmt(t.water)} ha</span></div>
+    <div class="stat"><span class="k">Built-up</span><span class="v">${fmt(t.built)} ha</span></div>
+    <div class="vlist">${members.map(m=>m.village).join(', ')}</div>
+  </div>`;
+}
+
+const LAND_TYPE_LABEL = {
+  forest: 'Predominantly forest / tree cover',
+  cultivable: 'Predominantly cultivable (cropland)',
+  water: 'Predominantly water body',
+  built: 'Predominantly built-up',
+  mixed: 'Mixed &mdash; no single dominant land cover',
+};
+
+function landTypeHtml(u){
+  if(!u.land_type) return '';
+  const s = u.land_type_shares || {};
+  return `<div class="landtype-tag ${'lt-'+u.land_type}">${LAND_TYPE_LABEL[u.land_type] || u.land_type}</div>
+    <div class="landtype-note">From CoRE Stack's land-cover shares for this boundary: cultivable/net sown ${fmt(s.cultivable,1)}%, forest/tree cover ${fmt(s.forest,1)}%, water ${fmt(s.water,1)}%, built-up ${fmt(s.built,1)}%. This is a land-cover classification from satellite imagery, not terrain. CoRE Stack does have terrain and elevation data, but only at the micro-watershed (block-wide) level, not matched to this individual village boundary.</div>`;
+}
+
+function showDetail(u, entry){
+  const label = entry.unit_label;
+  let html = `<h3>${u.village}</h3>`;
+  html += `<div class="gpline">${u.gp ? 'Gram panchayat: '+u.gp+' &middot; ' : ''}${u.state} &middot; ${label}</div>`;
+  html += landTypeHtml(u);
+  const rows = [
+    ["Total area", fmt(u.area)+" ha"],
+    ["Net sown area", fmt(u.net)+" ha", true],
+    ["Net sown, % of area", fmt(u.net_pct,1)+"%"],
+    ["Gross cropped area (derived)", fmt(u.gross)+" ha"],
+    ["Cropping intensity", fmt(u.ci,2)],
+    ["Tree cover", fmt(u.tree)+" ha ("+fmt(u.tree_pct,1)+"%)"],
+    ["Single-cropped (kharif)", fmt(u.sk)+" ha"],
+    ["Doubly cropped", fmt(u.db)+" ha"],
+    ["Water bodies", fmt(u.water)+" ha"],
+    ["Built-up", fmt(u.built)+" ha"],
+  ];
+  html += rows.map(r => `<div class="stat"><span class="k">${r[0]}</span><span class="v${r[2]?' hl':''}">${r[1]}</span></div>`).join('');
+  html += watershedTerrainHtml(u);
+  html += enrichmentHtml(u);
+  const ci = clusterInfo(entry, u.village);
+  if(ci){
+    if(ci.isMain){
+      html += `<div class="cluster-tag main">Part of the main contiguous block (${ci.size} villages joined together)</div>`;
+    } else if(ci.size===1){
+      html += `<div class="cluster-tag iso">Isolated &mdash; does not border any other landscape village</div>`;
+    } else {
+      html += `<div class="cluster-tag iso">In a separate cluster of ${ci.size} villages, not joined to the main block</div>`;
+    }
+  }
+  html += clusterCombinedHtml(entry, u);
+  document.getElementById('detail').innerHTML = html;
+}
+
+function selectShape(el, u, entry){
+  if(selectedEl){
+    selectedEl.classList.remove('selected');
+    ['lt-forest','lt-cultivable','lt-water','lt-built','lt-mixed'].forEach(c=>selectedEl.classList.remove(c));
+  }
+  el.classList.add('selected');
+  if(u.land_type) el.classList.add('lt-'+u.land_type);
+  selectedEl = el;
+  showDetail(u, entry);
+}
+
+function selectOtherShape(el, s, entry){
+  if(selectedEl){
+    selectedEl.classList.remove('selected');
+    ['lt-forest','lt-cultivable','lt-water','lt-built','lt-mixed'].forEach(c=>selectedEl.classList.remove(c));
+  }
+  el.classList.add('selected');
+  if(s.land_type) el.classList.add('lt-'+s.land_type);
+  selectedEl = el;
+  showOtherVillage(s, entry);
+}
+
+function selectThematicShape(el, s, entry){
+  if(selectedEl){
+    selectedEl.classList.remove('selected');
+    ['lt-forest','lt-cultivable','lt-water','lt-built','lt-mixed'].forEach(c=>selectedEl.classList.remove(c));
+  }
+  el.classList.add('selected');
+  selectedEl = el;
+  const html = `<h3>${s.name}</h3>
+    <div class="gpline">${entry.name} block &middot; watershed &amp; terrain detail &mdash; CoRE Stack has no land-use classification for this village</div>
+    ${watershedTerrainHtml(s)}
+    ${enrichmentHtml(s)}`;
+  document.getElementById('detail').innerHTML = html;
+}
+
+function showOtherVillage(s, entry){
+  if(s.land_type){
+    const lt = s.land_type;
+    const html = `<h3>${s.name}</h3>
+      <div class="gpline">${entry.name} block &middot; estimated from CoRE Stack's watershed-level data &mdash; not one of the villages with its own CoRE Stack land-use match</div>
+      <div class="landtype-tag ${'lt-'+lt}">${LAND_TYPE_LABEL[lt] || lt} (estimated)</div>
+      <div class="stat"><span class="k">Estimated area</span><span class="v hl">${fmt(s.area,1)} ha</span></div>
+      <div class="stat"><span class="k">Cropland</span><span class="v">${fmt(s.crop_pct,1)}%</span></div>
+      <div class="stat"><span class="k">Tree / forest cover</span><span class="v">${fmt(s.tree_pct,1)}%</span></div>
+      <div class="stat"><span class="k">Water</span><span class="v">${fmt(s.water_pct,1)}%</span></div>
+      <div class="stat"><span class="k">Built-up</span><span class="v">${fmt(s.built_pct,1)}%</span></div>
+      <div class="stat"><span class="k">Barren / shrub</span><span class="v">${fmt(s.barren_pct,1)}%</span></div>
+      <div class="stat"><span class="k">Dominant terrain</span><span class="v">${s.terrain||'&mdash;'}</span></div>
+      <div class="stat"><span class="k">Elevation (min&ndash;max, mean)</span><span class="v">${fmt(s.elev_min,0)}&ndash;${fmt(s.elev_max,0)} m, mean ${fmt(s.elev_mean,0)} m</span></div>
+      ${s.mws_uid ? `<div class="stat"><span class="k">Main micro-watershed</span><span class="v">${s.watershed_code || s.mws_uid}</span></div>
+      <div class="stat"><span class="k">Villages sharing this watershed</span><span class="v">${s.n_villages_sharing_mws || 1}</span></div>` : ''}
+      <div class="landtype-note">Estimated by apportioning the micro-watershed(s) this village sits inside down to its own overlap area &mdash; CoRE Stack never ran its village-level classification on this village directly, so treat these figures as directional, not audited.</div>
+      ${enrichmentHtml(s)}`;
+    document.getElementById('detail').innerHTML = html;
+    return;
+  }
+  const html = `<h3>${s.name}</h3>
+    <div class="gpline">${entry.name} block &middot; not one of the villages CoRE Stack has matched land-use data for</div>
+    <div class="stat"><span class="k">Boundary area (measured from the shape)</span><span class="v hl">${fmt(s.area_ha,1)} ha</span></div>
+    <div class="cluster-tag iso">No CoRE Stack net sown / tree cover / cropping-intensity breakdown is available for this village &mdash; only its boundary shape and geographic area could be found. It sits inside the same administrative block as the selected ${entry.unit_label}s, shown here for context.</div>`;
+  document.getElementById('detail').innerHTML = html;
+}
+
+function treemap(items, x, y, w, h){
+  items = items.slice().sort((a,b)=>b.area-a.area);
+  const total = items.reduce((s,i)=>s+i.area,0) || 1;
+  const rects = [];
+  function layoutRow(row, rx, ry, rw, rh, horizontal){
+    const rowTotal = row.reduce((s,i)=>s+i.area,0);
+    let off = 0;
+    row.forEach(it=>{
+      const frac = rowTotal ? it.area/rowTotal : 0;
+      if(horizontal){
+        const rWidth = rw * frac;
+        rects.push({item:it, x:rx+off, y:ry, w:rWidth, h:rh});
+        off += rWidth;
+      } else {
+        const rHeight = rh * frac;
+        rects.push({item:it, x:rx, y:ry+off, w:rw, h:rHeight});
+        off += rHeight;
+      }
+    });
+  }
+  function worst(row, rowTotal, sideLen){
+    const areaScaled = row.map(it => (it.area/total) * (w*h));
+    const sum = areaScaled.reduce((a,b)=>a+b,0);
+    const maxA = Math.max(...areaScaled), minA = Math.min(...areaScaled);
+    const s2 = sideLen*sideLen;
+    return Math.max((s2*maxA)/(sum*sum), (sum*sum)/(s2*minA));
+  }
+  let remaining = items.slice();
+  let cx = x, cy = y, cw = w, ch = h;
+  while(remaining.length){
+    const shortSide = Math.min(cw, ch);
+    let row = [remaining[0]];
+    let i = 1;
+    while(i < remaining.length){
+      const testRow = row.concat([remaining[i]]);
+      if(worst(testRow, 0, shortSide) <= worst(row, 0, shortSide)) { row = testRow; i++; }
+      else break;
+    }
+    remaining = remaining.slice(row.length);
+    const rowAreaScaled = row.reduce((s,it)=>s+(it.area/total)*(w*h),0);
+    const horizontal = cw >= ch;
+    if(horizontal){
+      const rowW = shortSide ? rowAreaScaled/ch : 0;
+      layoutRow(row, cx, cy, rowW, ch, false);
+      cx += rowW; cw -= rowW;
+    } else {
+      const rowH = shortSide ? rowAreaScaled/cw : 0;
+      layoutRow(row, cx, cy, cw, rowH, true);
+      cy += rowH; ch -= rowH;
+    }
+  }
+  return rects;
+}
+
+function fillFor(entry, name, u){
+  if(colorMode === 'contig' && entry.has_contiguity){
+    const ci = clusterInfo(entry, name);
+    if(!ci) return 'var(--bd)';
+    return ci.isMain ? '#2E7573' : '#C0626B';
+  }
+  return u ? colorForPct(u.net_pct) : 'var(--bd)';
+}
+
+function currentGpVillageSet(entry){
+  if(!gpFilter || !entry.gp_groups || !entry.gp_groups[gpFilter]) return null;
+  return new Set(entry.gp_groups[gpFilter].villages.map(norm));
+}
+
+function applyGpClasses(entry){
+  const gpSet = currentGpVillageSet(entry);
+  document.querySelectorAll('#svg .shape').forEach(el=>{
+    el.classList.remove('gp-dim','gp-hi');
+    if(!gpSet) return;
+    const nm = norm(el.dataset.name || '');
+    if(el.classList.contains('context') || el.classList.contains('out') || el.classList.contains('other')){
+      return; // context / other-village shapes stay as-is
+    }
+    if(gpSet.has(nm)) el.classList.add('gp-hi');
+    else el.classList.add('gp-dim');
+  });
+}
+
+function renderGpOptions(entry){
+  const sel = document.getElementById('gpfilter');
+  if(!entry.gp_groups){
+    sel.innerHTML = '<option value="">No Gram Panchayat data for this landscape</option>';
+    sel.disabled = true;
+    return;
+  }
+  sel.disabled = false;
+  const names = Object.keys(entry.gp_groups).sort();
+  sel.innerHTML = '<option value="">All Gram Panchayats (' + names.length + ')</option>' +
+    names.map(g=>`<option value="${g}">${g} (${entry.gp_groups[g].villages.length})</option>`).join('');
+  sel.value = gpFilter && entry.gp_groups[gpFilter] ? gpFilter : '';
+  if(!entry.gp_groups[gpFilter]) gpFilter = '';
+}
+
+function renderGpSummary(entry){
+  const box = document.getElementById('gp-summary');
+  if(!gpFilter || !entry.gp_groups || !entry.gp_groups[gpFilter]){
+    box.style.display = 'none';
+    box.innerHTML = '';
+    return;
+  }
+  const g = entry.gp_groups[gpFilter];
+  const t = g.totals;
+  let contigHtml;
+  if(g.single_component === null){
+    contigHtml = `<span class="gpstat">Contiguity: <b>not assessable</b> (no confirmed village boundaries for ${entry.name})</span>`;
+  } else if(g.single_component){
+    contigHtml = `<span class="gpstat">Its own villages: <b>all joined together</b> (${g.villages.length} villages)</span>`;
+  } else {
+    const sizes = g.components.map(c=>c.length).join(', ');
+    contigHtml = `<span class="gpstat">Its own villages: <b>split into ${g.components.length} separate groups</b> (sizes: ${sizes}) &mdash; not all touching each other</span>`;
+  }
+  box.style.display = 'block';
+  box.innerHTML = `<h4>${gpFilter} &mdash; ${g.villages.length} ${entry.unit_label}${g.villages.length===1?'':'s'}</h4>
+    <div>${contigHtml}</div>
+    <div style="margin-top:6px">
+      <span class="gpstat">Total area: <b>${fmt(t.area)} ha</b></span>
+      <span class="gpstat">Net sown: <b>${fmt(t.net)} ha</b></span>
+      <span class="gpstat">Gross cropped (derived): <b>${fmt(t.gross)} ha</b></span>
+      <span class="gpstat">Cropping intensity: <b>${fmt(t.ci,2)}</b></span>
+      <span class="gpstat">Tree cover: <b>${fmt(t.tree)} ha</b></span>
+      <span class="gpstat">Water: <b>${fmt(t.water)} ha</b></span>
+      <span class="gpstat">Built-up: <b>${fmt(t.built)} ha</b></span>
+    </div>
+    <div class="vlist">${g.villages.join(', ')}</div>`;
+}
+
+function renderGeo(entry){
+  const svg = document.getElementById('svg');
+  svg.setAttribute('viewBox', entry.geo.viewBox);
+  const byName = {};
+  entry.units.forEach(u => byName[u.village] = u);
+  const thematic = (colorMode === 'watershed' || colorMode === 'terrain' || colorMode === 'soil' || colorMode === 'drought' || colorMode === 'development');
+  entry.geo.shapes.forEach(s => {
+    const u = byName[s.name];
+    const path = document.createElementNS(svgNS,'path');
+    path.setAttribute('d', s.d);
+    path.dataset.name = s.name;
+
+    let fill, cls;
+    if(thematic && colorMode === 'soil' && s.soil){
+      fill = SOIL_COLOR[s.soil.drainage] || '#C7CECC';
+      cls = 'shape thematic';
+    } else if(thematic && colorMode === 'drought' && s.drought){
+      fill = droughtColorFor(entry, s.drought.latest_score);
+      cls = 'shape thematic';
+    } else if(thematic && colorMode === 'development' && s.dev_irrigation_level){
+      fill = DEV_COLOR[s.dev_irrigation_level] || '#C7CECC';
+      cls = 'shape thematic';
+    } else if(thematic && (colorMode === 'watershed' || colorMode === 'terrain') && s.mws_uid){
+      fill = colorMode === 'watershed' ? watershedColorFor(entry, s.mws_uid) : (TERRAIN_COLOR[s.ws_terrain] || '#C7CECC');
+      cls = 'shape thematic';
+    } else if(u){
+      fill = fillFor(entry, s.name, u);
+      cls = 'shape';
+    } else if(s.is_other){
+      fill = (s.land_type && OTHER_LAND_TYPE_FILL[s.land_type]) || '#E08A2C';
+      cls = 'shape other';
+    } else {
+      fill = 'var(--bd)';
+      cls = 'shape context';
+    }
+    path.setAttribute('class', cls);
+    path.setAttribute('fill', fill);
+
+    if(u){
+      path.addEventListener('click', ()=> selectShape(path, u, entry));
+    } else if(s.is_other){
+      path.addEventListener('click', ()=> selectOtherShape(path, s, entry));
+    } else if(s.mws_uid){
+      path.style.cursor = 'pointer';
+      path.addEventListener('click', ()=> selectThematicShape(path, s, entry));
+    }
+    svg.appendChild(path);
+  });
+  if(entry.units.length <= 40){
+    entry.geo.shapes.forEach(s=>{
+      if(!byName[s.name]) return;
+      const t = document.createElementNS(svgNS,'text');
+      t.setAttribute('x', s.lx); t.setAttribute('y', s.ly);
+      t.setAttribute('class','lbl' + (entry.units.length>25?' lbl-sm':''));
+      t.textContent = s.name;
+      svg.appendChild(t);
+    });
+  }
+}
+
+function renderSchematic(entry){
+  const svg = document.getElementById('svg');
+  svg.setAttribute('viewBox','0 0 1000 760');
+  const pad = 10;
+  const rects = treemap(entry.units.map(u=>({area:u.area, u})), pad, pad, 1000-2*pad, 760-2*pad);
+  rects.forEach(r=>{
+    const rect = document.createElementNS(svgNS,'rect');
+    rect.setAttribute('x', r.x.toFixed(1)); rect.setAttribute('y', r.y.toFixed(1));
+    rect.setAttribute('width', Math.max(0,r.w-2).toFixed(1)); rect.setAttribute('height', Math.max(0,r.h-2).toFixed(1));
+    rect.setAttribute('class','shape');
+    rect.setAttribute('fill', colorForPct(r.item.u.net_pct));
+    rect.addEventListener('click', ()=> selectShape(rect, r.item.u, entry));
+    rect.dataset.name = r.item.u.village;
+    svg.appendChild(rect);
+    if(r.w > 46 && r.h > 16){
+      const t = document.createElementNS(svgNS,'text');
+      t.setAttribute('x', r.x + r.w/2); t.setAttribute('y', r.y + r.h/2 + 3);
+      t.setAttribute('class','lbl' + (r.w<80?' lbl-sm':''));
+      t.textContent = r.item.u.village;
+      svg.appendChild(t);
+    }
+  });
+}
+
+function renderLegend(entry){
+  const legend = document.getElementById('legend');
+  const otherShapes = (entry.geo && entry.geo.shapes || []).filter(s=>s.is_other);
+  const hasOther = otherShapes.length > 0;
+  const hasOtherLandType = otherShapes.some(s=>s.land_type);
+  let otherSw;
+  if(hasOtherLandType){
+    const typesPresent = Array.from(new Set(otherShapes.map(s=>s.land_type).filter(Boolean)));
+    otherSw = typesPresent.map(t =>
+      `<span><span class="sw" style="background:${OTHER_LAND_TYPE_FILL[t]}"></span>Other village &mdash; ${LAND_TYPE_LABEL[t] || t} (estimated)</span>`
+    ).join('');
+  } else {
+    const otherLabel = entry.boundary_source === 'datameet'
+      ? 'Village boundary (no CoRE Stack data available yet)'
+      : 'Other village in the block (no CoRE Stack land-use data)';
+    otherSw = hasOther ? `<span><span class="sw" style="background:#E08A2C"></span>${otherLabel}</span>` : '';
+  }
+  if(colorMode === 'watershed'){
+    legend.innerHTML =
+      '<span>Each colour is a different micro-watershed &mdash; villages sharing a colour drain into the same watershed unit. Click any coloured village for its watershed code and area.</span>' +
+      '<span><span class="sw" style="background:var(--bd)"></span>No watershed match found</span>';
+  } else if(colorMode === 'terrain'){
+    legend.innerHTML = TERRAIN_ORDER.map(t =>
+      `<span><span class="sw" style="background:${TERRAIN_COLOR[t]}"></span>${t}</span>`
+    ).join('') + '<span><span class="sw" style="background:var(--bd)"></span>No terrain match found</span>';
+  } else if(colorMode === 'soil'){
+    const present = new Set((entry.geo.shapes||[]).filter(s=>s.soil).map(s=>s.soil.drainage));
+    legend.innerHTML = SOIL_ORDER.filter(t=>present.has(t)).map(t =>
+      `<span><span class="sw" style="background:${SOIL_COLOR[t]}"></span>${t}</span>`
+    ).join('') + '<span><span class="sw" style="background:var(--bd)"></span>No soil match found</span>';
+  } else if(colorMode === 'drought'){
+    legend.innerHTML =
+      '<span><span class="sw" style="background:rgb(247,236,196)"></span>Lower drought pressure</span>' +
+      '<span><span class="sw" style="background:rgb(176,42,42)"></span>Higher drought pressure</span>' +
+      '<span><span class="sw" style="background:var(--bd)"></span>No drought data</span>';
+  } else if(colorMode === 'development'){
+    legend.innerHTML = DEV_ORDER.map(k =>
+      `<span><span class="sw" style="background:${DEV_COLOR[k]}"></span>${k.charAt(0)+k.slice(1).toLowerCase()} irrigation &amp; watershed development</span>`
+    ).join('') + '<span><span class="sw" style="background:var(--bd)"></span>No indicator available</span>';
+  } else if(colorMode === 'contig' && entry.has_contiguity){
+    legend.innerHTML =
+      '<span><span class="sw" style="background:#2E7573"></span>Main contiguous block</span>' +
+      '<span><span class="sw" style="background:#C0626B"></span>Separate / isolated from main block</span>' +
+      '<span><span class="sw" style="background:var(--bd)"></span>Outside the landscape (context)</span>' + otherSw;
+  } else {
+    legend.innerHTML =
+      '<span><span class="sw" style="background:rgb(244,230,200)"></span>Low net sown %</span>' +
+      '<span><span class="sw" style="background:rgb(46,117,115)"></span>High net sown %</span>' +
+      '<span><span class="sw" style="background:var(--bd)"></span>Outside the landscape (context)</span>' + otherSw;
+  }
+  renderWsKey(entry);
+}
+
+function renderWsKey(entry){
+  const keyDiv = document.getElementById('ws-key');
+  if(!entry.geo){ keyDiv.style.display = 'none'; keyDiv.innerHTML = ''; return; }
+  if(colorMode === 'drought'){
+    const withDrought = entry.geo.shapes.filter(s=>s.drought);
+    if(!withDrought.length){ keyDiv.style.display = 'none'; keyDiv.innerHTML = ''; return; }
+    const scores = withDrought.map(s=>s.drought.latest_score);
+    const min = Math.min(...scores), max = Math.max(...scores);
+    const firstYear = withDrought[0].drought.years[0];
+    const latestYear = withDrought[0].drought.latest_year;
+    keyDiv.style.display = 'block';
+    keyDiv.innerHTML = `<div class="ws-key-title">Drought pressure colour key &mdash; ${entry.name} block</div>
+      <div class="ws-key-note">
+        <b>Years covered:</b> ${firstYear}&ndash;${latestYear}, CoRE Stack's full drought-causality record. The map colour is just the single most recent year, ${latestYear}; click any village to see the year-by-year score back to ${firstYear} and whether it is improving, worsening, or stable over that span.<br>
+        <b>What the score means:</b> it is a drought-<i>pressure</i> score, not a percentage or a rainfall figure &mdash; higher means more drought pressure that year, lower means less. It has no fixed ceiling, so read it as relative, not absolute.<br>
+        <b>How it is calculated:</b> CoRE Stack scores each micro-watershed every year on a set of mild-drought indicators (rainfall shortfall, area sown, vegetation condition) and a separate moderate/severe-drought indicator, then we add those sub-scores together into one composite number per micro-watershed per year, so a rise reflects either indicator getting worse, or both.<br>
+        Scores in this block range from ${fmt(min,1)} (palest, ${latestYear}) to ${fmt(max,1)} (darkest red, ${latestYear}) &mdash; this scale is relative within the ${entry.name} block only and cannot be compared against another block's colours.
+      </div>`;
+    return;
+  }
+  if(colorMode === 'soil'){
+    const withSoil = entry.geo.shapes.filter(s=>s.soil);
+    if(!withSoil.length){ keyDiv.style.display = 'none'; keyDiv.innerHTML = ''; return; }
+    keyDiv.style.display = 'block';
+    keyDiv.innerHTML = `<div class="ws-key-title">Soil drainage colour key &mdash; ${entry.name} block</div>
+      <div class="ws-key-note">
+        <b>Years covered:</b> none &mdash; this is a one-time soil survey, not a yearly series, so there is nothing to compare across years here (that's what the drought and watershed-development layers are for).<br>
+        <b>What the colour means:</b> each micro-watershed's dominant soil drainage class &mdash; how quickly water moves through and out of the soil after rain or irrigation. Lighter greens drain freely; darker oranges/reds drain more slowly and are more prone to waterlogging.<br>
+        <b>How it is calculated:</b> from CoRE Stack's soil survey layer, which classifies each micro-watershed's soil profile (texture, structure, depth) into a standard drainage-class category &mdash; it is not derived from rainfall or satellite imagery. Click any village for its full soil detail: texture, organic carbon, pH, and available water capacity.
+      </div>`;
+    return;
+  }
+  if(colorMode === 'development'){
+    const withDev = entry.geo.shapes.filter(s=>s.dev_irrigation_level);
+    if(!withDev.length){ keyDiv.style.display = 'none'; keyDiv.innerHTML = ''; return; }
+    keyDiv.style.display = 'block';
+    keyDiv.innerHTML = `<div class="ws-key-title">Irrigation &amp; watershed development colour key &mdash; ${entry.name} block</div>
+      <div class="ws-key-note">
+        <b>Years covered:</b> none &mdash; Mission Antyodaya publishes this as a single latest-round snapshot per village, not year-stamped, so there is no trend to show here.<br>
+        <b>What the colour means:</b> each village's LOW / MEDIUM / HIGH rating on the "irrigation &amp; watershed development" theme &mdash; how developed the village's irrigation and watershed-management infrastructure is judged to be, relative to other villages nationally, not just within this block.<br>
+        <b>How it is calculated:</b> Mission Antyodaya scores each village on several underlying indicators for this theme (such as irrigation coverage and watershed-structure presence) and buckets the result into one of the three levels shown &mdash; we did not compute this ourselves, we are only colouring the map by Mission Antyodaya's own published rating. Click any village to see its full set of tracked development indicators &mdash; organic farming, alternative-farming livelihoods, forest-resource livelihoods, water &amp; sanitation, road connectivity, and financial inclusion.
+      </div>`;
+    return;
+  }
+  if(colorMode !== 'watershed'){ keyDiv.style.display = 'none'; keyDiv.innerHTML = ''; return; }
+  const byUid = {};
+  entry.geo.shapes.forEach(s=>{
+    if(!s.mws_uid) return;
+    if(!byUid[s.mws_uid]) byUid[s.mws_uid] = { uid: s.mws_uid, code: s.watershed_code, area: s.mws_area_ha, villages: [] };
+    byUid[s.mws_uid].villages.push(s.name);
+  });
+  const rows = Object.values(byUid).sort((a,b)=> (b.area||0)-(a.area||0));
+  const html = rows.map(r => {
+    const color = watershedColorFor(entry, r.uid);
+    const n = r.villages.length;
+    return `<div class="ws-key-row">
+      <span class="sw" style="background:${color}"></span>
+      <span class="ws-key-code">${r.uid}${r.code ? ' <span class=\"ws-key-subcode\">(part of '+r.code+')</span>' : ''}</span>
+      <span class="ws-key-meta">${fmt(r.area,1)} ha &middot; ${n} village${n===1?'':'s'}</span>
+      <span class="ws-key-villages">${r.villages.join(', ')}</span>
+    </div>`;
+  }).join('');
+  keyDiv.style.display = 'block';
+  keyDiv.innerHTML = `<div class="ws-key-title">Watershed colour key &mdash; ${rows.length} micro-watersheds in the ${entry.name} block</div>
+    <div class="ws-key-note">Each row below is one micro-watershed (MWS) that CoRE Stack has delineated for this block &mdash; a natural drainage unit, not an administrative one. The colour swatch matches the map above; every village listed in a row sits inside that same micro-watershed, so villages painted the same colour drain into the same unit. The code in brackets is the broader standard watershed it belongs to (several neighbouring micro-watersheds commonly share one), so seeing the same bracketed code repeat across rows is expected. Watersheds are listed largest first.</div>
+    <div class="ws-key-list">${html}</div>`;
+}
+
+function renderContigLine(entry){
+  const line = document.getElementById('contig-line');
+  if(!entry.has_contiguity){ line.style.display = 'none'; return; }
+  const c = entry.contiguity;
+  const isContiguous = c.components.length === 1;
+  line.style.display = 'block';
+  line.className = 'contig-line ' + (isContiguous ? 'yes' : 'no');
+  if(isContiguous){
+    line.innerHTML = `<b>Contiguous.</b> All ${c.n_selected} landscape villages touch or border another landscape village, forming one connected block within the ${entry.name} administrative block (${c.n_block} villages total).`;
+  } else {
+    const sizes = c.components.map(x=>x.length);
+    line.innerHTML = `<b>Not contiguous.</b> The ${c.n_selected} landscape villages split into ${c.components.length} separate clusters (sizes: ${sizes.join(', ')}) inside the ${c.n_block}-village ${entry.name} block &mdash; they do not all touch each other.`;
+  }
+}
+
+function renderTotals(entry){
+  const el = document.getElementById('totals');
+  if(entry.units.length === 0 && entry.geo && entry.geo.shapes){
+    const shapes = entry.geo.shapes;
+    const totalArea = shapes.reduce((a,s)=>a+(s.area_ha||0),0);
+    el.innerHTML = [
+      ["Villages (boundaries only)", shapes.length],
+      ["Total boundary area", fmt(totalArea,0)+" ha"],
+    ].map(x=>`<div class="tot"><div class="k">${x[0]}</div><div class="v">${x[1]}</div></div>`).join('');
+    return;
+  }
+  const t = entry.units.reduce((a,u)=>{a.area+=u.area||0; a.net+=u.net||0; a.tree+=u.tree||0; a.gross+=u.gross||0; return a;}, {area:0,net:0,tree:0,gross:0});
+  el.innerHTML = [
+    ["Units", entry.units.length],
+    ["Total area", fmt(t.area,0)+" ha"],
+    ["Net sown", fmt(t.net,0)+" ha"],
+    ["Gross cropped (derived)", fmt(t.gross,0)+" ha"],
+    ["Tree cover", fmt(t.tree,0)+" ha"],
+  ].map(x=>`<div class="tot"><div class="k">${x[0]}</div><div class="v">${x[1]}</div></div>`).join('');
+}
+
+function renderJump(entry){
+  const sel = document.getElementById('jump');
+  sel.innerHTML = '<option value="">Jump to a ' + entry.unit_label + '...</option>' +
+    entry.units.slice().sort((a,b)=>a.village.localeCompare(b.village))
+      .map(u=>`<option value="${u.village}">${u.village}${u.gp?' ('+u.gp+')':''}</option>`).join('');
+  sel.onchange = () => {
+    if(!sel.value) return;
+    const shape = document.querySelector(`[data-name="${CSS.escape(sel.value)}"]`);
+    const u = entry.units.find(x=>x.village===sel.value);
+    if(shape){ selectShape(shape, u, entry); }
+    else if(u){ showDetail(u, entry); if(selectedEl){selectedEl.classList.remove('selected'); selectedEl=null;} }
+  };
+}
+
+function updateColorButtons(mode){
+  document.getElementById('btn-crop').classList.toggle('active', mode==='crop');
+  document.getElementById('btn-contig').classList.toggle('active', mode==='contig');
+  document.getElementById('btn-watershed').classList.toggle('active', mode==='watershed');
+  document.getElementById('btn-terrain').classList.toggle('active', mode==='terrain');
+  document.getElementById('btn-soil').classList.toggle('active', mode==='soil');
+  document.getElementById('btn-drought').classList.toggle('active', mode==='drought');
+  document.getElementById('btn-development').classList.toggle('active', mode==='development');
+}
+
+function setColorMode(mode){
+  colorMode = mode;
+  updateColorButtons(mode);
+  renderLandscapeBody(DATA.landscapes[current]);
+}
+
+function renderLandscapeBody(entry){
+  selectedEl = null;
+  clearSvg();
+  document.getElementById('detail').innerHTML = '<div class="empty">Click a ' + entry.unit_label + ' to see its details here.</div>';
+  if(entry.mode === 'geo') renderGeo(entry); else renderSchematic(entry);
+  applyGpClasses(entry);
+  renderLegend(entry);
+  renderContigLine(entry);
+  renderGpSummary(entry);
+  renderTotals(entry);
+  renderJump(entry);
+}
+
+function renderLandscape(name){
+  current = name;
+  const entry = DATA.landscapes[name];
+  document.getElementById('ls-title').textContent = name + " · " + (entry.units[0] ? entry.units[0].state : (entry.state || ''));
+  const badge = document.getElementById('ls-badge');
+  badge.textContent = entry.mode === 'geo' ? 'Real village boundaries' : 'Schematic layout';
+  badge.className = 'badge ' + entry.mode;
+  const notice = document.getElementById('ls-notice');
+  const hasOther = entry.geo && entry.geo.shapes && entry.geo.shapes.some(s=>s.is_other);
+  if(entry.mode === 'geo' && entry.boundary_source === 'datameet'){
+    notice.textContent = "No CoRE Stack data exists for " + name + " yet (" + (entry.block_name || '') + ") — CAT has not built a landscape-level village list here, and the CoRE Stack API has no activated block for this area. Shapes are real village boundaries from Datameet's community-mapped Indian Village Boundaries project (ODbL licence), covering the whole administrative block, not just CAT's eventual landscape footprint. Click any village for its name and boundary area only — no land-use, cropping, soil, drought, or demographic data is available for this landscape yet.";
+  } else if(entry.mode === 'geo' && hasOther){
+    const otherShapes = entry.geo.shapes.filter(s=>s.is_other);
+    const nOther = otherShapes.length;
+    const hasEstimate = otherShapes.some(s=>s.land_type);
+    notice.textContent = hasEstimate
+      ? "Shapes are true village boundaries from CoRE Stack. Coloured villages (" + nOther + " of them) are inside this same administrative block but have no CoRE Stack village-level land-use match — their colour and detail are an estimate worked out from CoRE Stack's watershed-level data, not CoRE Stack's own figures. Click one to see the estimate. Grey shapes are neighbouring villages outside the block entirely, shown for context only. Use the colour toggle above to switch to a watershed, terrain, soil, drought-risk, or irrigation-development view of the whole block — and click any village for population, livestock, NREGA works, market access, and more."
+      : "Shapes are true village boundaries from CoRE Stack. Orange villages (" + nOther + " of them) are inside this same administrative block but have no CoRE Stack land-use match — click one to see its boundary area only. Grey shapes are neighbouring villages outside the block entirely, shown for context only.";
+  } else if(entry.mode === 'geo'){
+    notice.textContent = "Shapes are true village boundaries from CoRE Stack. Grey shapes are neighbouring villages outside the landscape, shown for context only.";
+  } else if(name === 'East Khasi Hills'){
+    notice.textContent = "East Khasi Hills has no village layer (Sixth Schedule area, no Panchayati Raj). Boxes are the 252 micro-watersheds covering the whole district, sized by area — not true shapes or true positions. Contiguity cannot be checked without real boundaries.";
+  } else {
+    notice.textContent = "Village boundary geometry for " + name + " has not been fetched, so boxes are a schematic layout sized by each village's area — not true shape or true position. Contiguity cannot be checked without real boundaries. Use the dropdown to find a village by name.";
+  }
+  const contigBtn = document.getElementById('btn-contig');
+  contigBtn.disabled = !entry.has_contiguity;
+  if(!entry.has_contiguity && colorMode === 'contig') colorMode = 'crop';
+  const hasWs = entry.mode === 'geo' && entry.geo.shapes.some(s=>s.mws_uid);
+  const hasSoil = entry.mode === 'geo' && entry.geo.shapes.some(s=>s.soil);
+  const hasDrought = entry.mode === 'geo' && entry.geo.shapes.some(s=>s.drought);
+  const hasDev = entry.mode === 'geo' && entry.geo.shapes.some(s=>s.dev_irrigation_level);
+  const wsBtn = document.getElementById('btn-watershed');
+  const terrainBtn = document.getElementById('btn-terrain');
+  const soilBtn = document.getElementById('btn-soil');
+  const droughtBtn = document.getElementById('btn-drought');
+  const devBtn = document.getElementById('btn-development');
+  wsBtn.disabled = !hasWs;
+  terrainBtn.disabled = !hasWs;
+  soilBtn.disabled = !hasSoil;
+  droughtBtn.disabled = !hasDrought;
+  devBtn.disabled = !hasDev;
+  if(!hasWs && (colorMode === 'watershed' || colorMode === 'terrain')) colorMode = 'crop';
+  if(!hasSoil && colorMode === 'soil') colorMode = 'crop';
+  if(!hasDrought && colorMode === 'drought') colorMode = 'crop';
+  if(!hasDev && colorMode === 'development') colorMode = 'crop';
+  updateColorButtons(colorMode);
+  gpFilter = '';
+  renderGpOptions(entry);
+  renderLandscapeBody(entry);
+  renderOtherVillages(entry);
+}
+
+const OTHER_LAND_TYPE_FILL = {
+  forest: '#2F6B3A', cultivable: '#B8860B', water: '#2A6F97', built: '#8A4A4A', mixed: '#7A6A53',
+};
+
+function classifyOtherLandType(v){
+  const shares = { cultivable: v.crop_pct||0, forest: v.tree_pct||0, water: v.water_pct||0, built: v.built_pct||0 };
+  let dom = 'cultivable', domv = -1;
+  Object.keys(shares).forEach(k=>{ if(shares[k] > domv){ domv = shares[k]; dom = k; } });
+  const others = Object.keys(shares).filter(k=>k!==dom).map(k=>shares[k]).sort((a,b)=>b-a);
+  const second = others.length ? others[0] : 0;
+  if(domv < 35 || (domv-second) < 10) return 'mixed';
+  return dom;
+}
+
+function showOtherVillageEstimate(v, entry){
+  const lt = classifyOtherLandType(v);
+  const html = `<h3>${v.village}</h3>
+    <div class="gpline">${entry.name} block &middot; estimated from CoRE Stack's watershed-level data &mdash; not one of the villages with its own CoRE Stack land-use match</div>
+    <div class="landtype-tag ${'lt-'+lt}">${LAND_TYPE_LABEL[lt] || lt} (estimated)</div>
+    <div class="stat"><span class="k">Estimated area</span><span class="v hl">${fmt(v.area,1)} ha</span></div>
+    <div class="stat"><span class="k">Cropland</span><span class="v">${fmt(v.crop_pct,1)}%</span></div>
+    <div class="stat"><span class="k">Tree / forest cover</span><span class="v">${fmt(v.tree_pct,1)}%</span></div>
+    <div class="stat"><span class="k">Water</span><span class="v">${fmt(v.water_pct,1)}%</span></div>
+    <div class="stat"><span class="k">Built-up</span><span class="v">${fmt(v.built_pct,1)}%</span></div>
+    <div class="stat"><span class="k">Barren / shrub</span><span class="v">${fmt(v.barren_pct,1)}%</span></div>
+    <div class="stat"><span class="k">Dominant terrain</span><span class="v">${v.terrain||'&mdash;'}</span></div>
+    <div class="stat"><span class="k">Elevation (min&ndash;max, mean)</span><span class="v">${fmt(v.elev_min,0)}&ndash;${fmt(v.elev_max,0)} m, mean ${fmt(v.elev_mean,0)} m</span></div>
+    <div class="landtype-note">Estimated by apportioning the micro-watershed(s) this village sits inside down to its own overlap area &mdash; CoRE Stack never ran its village-level classification on this village directly, so treat these figures as directional, not audited.</div>`;
+  document.getElementById('other-detail').innerHTML = html;
+}
+
+let otherSelectedEl = null;
+
+function renderOtherVillages(entry){
+  const panel = document.getElementById('other-panel');
+  const list = entry.other_villages;
+  if(!list || !list.length){ panel.style.display = 'none'; return; }
+  const shapeOtherNames = new Set((entry.geo && entry.geo.shapes || []).filter(s=>s.is_other).map(s=>s.name.trim().toUpperCase()));
+  const allOnMap = list.length > 0 && list.every(v => shapeOtherNames.has((v.village||'').trim().toUpperCase()));
+  if(allOnMap){ panel.style.display = 'none'; return; }
+  panel.style.display = 'block';
+  document.getElementById('other-notice').textContent =
+    `${list.length} further villages in the ${entry.name} block have no CoRE Stack village-level land-use match, so we don't have real boundaries or exact figures for them. ` +
+    `The boxes below are sized by an estimated area and coloured by estimated dominant land cover, worked out from CoRE Stack's own watershed-level (not village-level) data. Click a box for the estimate.`;
+  const svg = document.getElementById('other-svg');
+  while(svg.firstChild) svg.removeChild(svg.firstChild);
+  otherSelectedEl = null;
+  document.getElementById('other-detail').innerHTML = '<div class="empty">Click a box above to see its estimate.</div>';
+  const pad = 6;
+  const rects = treemap(list.map(v=>({area: v.area||0.01, v})), pad, pad, 1000-2*pad, 220-2*pad);
+  rects.forEach(r=>{
+    const rect = document.createElementNS(svgNS,'rect');
+    rect.setAttribute('x', r.x.toFixed(1)); rect.setAttribute('y', r.y.toFixed(1));
+    rect.setAttribute('width', Math.max(0,r.w-1.5).toFixed(1)); rect.setAttribute('height', Math.max(0,r.h-1.5).toFixed(1));
+    rect.setAttribute('class','other-box');
+    const lt = classifyOtherLandType(r.item.v);
+    rect.setAttribute('fill', OTHER_LAND_TYPE_FILL[lt] || '#7A6A53');
+    rect.addEventListener('click', ()=>{
+      if(otherSelectedEl) otherSelectedEl.classList.remove('selected');
+      rect.classList.add('selected');
+      otherSelectedEl = rect;
+      showOtherVillageEstimate(r.item.v, entry);
+    });
+    svg.appendChild(rect);
+  });
+  const legend = document.getElementById('other-legend');
+  legend.innerHTML = Object.keys(OTHER_LAND_TYPE_FILL).map(k=>
+    `<span><span class="sw" style="background:${OTHER_LAND_TYPE_FILL[k]}"></span>${LAND_TYPE_LABEL[k]} (estimated)</span>`
+  ).join('');
+}
+
+document.getElementById('gpfilter').onchange = (e) => {
+  gpFilter = e.target.value;
+  renderLandscapeBody(DATA.landscapes[current]);
+};
+
+function renderTabs(){
+  const tabs = document.getElementById('tabs');
+  tabs.innerHTML = '';
+  DATA.order.forEach(name=>{
+    const b = document.createElement('button');
+    b.className = 'tab' + (name===current?' active':'');
+    b.textContent = name;
+    b.onclick = () => {
+      document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+      b.classList.add('active');
+      renderLandscape(name);
+    };
+    tabs.appendChild(b);
+  });
+}
+
+document.getElementById('btn-crop').onclick = () => setColorMode('crop');
+document.getElementById('btn-contig').onclick = () => setColorMode('contig');
+document.getElementById('btn-watershed').onclick = () => setColorMode('watershed');
+document.getElementById('btn-terrain').onclick = () => setColorMode('terrain');
+document.getElementById('btn-soil').onclick = () => setColorMode('soil');
+document.getElementById('btn-drought').onclick = () => setColorMode('drought');
+document.getElementById('btn-development').onclick = () => setColorMode('development');
+
+renderTabs();
+renderLandscape(current);
+</script>
+
+</body>
+</html>
